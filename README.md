@@ -2,7 +2,7 @@
 
 ## 参考
 
-- 思路学习自[miloyip/json-tutorial](1)，使用C++实现。
+- 思路学习自[miloyip/json-tutorial][1]，使用C++实现。
 - API设计一定程度上参考了[open-source-parsers/jsoncpp][2]。
 
 ## 特性
