@@ -70,19 +70,19 @@ writer.writeJson(value, json);
 ### 访问
 
 `JsonValue`类型接口：
-- 使用一个类型参数的构造函数。
+- 默认构造一个null value，使用一个类型参数构造该类型的value。
 - 使用不同类型参数并将value初始化对应类型的构造函数。
 - 拷贝构造、移动构造与`operator=`。
 - null类型可转化为所有其他类型。
 - 类型获取与设置：`setType`, `type`。
 - 类型判断：`isNull`,`isBool`,`isNumber`,`isString`,`isArray`,`isObject`。
-- Null类型操作：`setNull`，清空所有数据，类型转化为null。
+- 清理value：`setNull`，清空所有数据，将类型转化为null。
 - 以下各类型专属操作使用前应该先确定类型，或者确定为null时使用：
     - Boolean操作：`isTrue`,`isFalse`,`setBool`,`getBool`。
     - Number操作：`getNumber`,`setNumber`。
     - String操作：`getString`,`setString`。
-    - Array操作：`get`,`resize`,`append`,`insert`,`removeAt`,`operator[size_t]`。
-    - Obejct操作：`containsKey`,`getKeys`，`appendKey`,`removeKey`,`operator[std::string]`。
+    - Array操作：`get(size_t)`,`resize`,`append`,`insert`,`removeAt`,`operator[size_t]`。
+    - Obejct操作：`get(std::string)`,`containsKey`,`getKeys`，`appendKey`,`removeKey`,`operator[std::string]`。
     - Array&Object共用操作：`size`,`clear`,`empty`。
 - `operator==`,`operator!=`。
 - Null类型可转化为所有类型，可通过调用设置或者添加值的接口将其转化为其他类型。
