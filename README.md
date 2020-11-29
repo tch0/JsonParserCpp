@@ -75,9 +75,9 @@ writer.writeJson(value, json);
 - 拷贝构造、移动构造与`operator=`。
 - null类型可转化为所有其他类型。
 - 类型获取与设置：`setType`, `type`。
-- 类型判断：`isBool`,`isNumber`,`isString`,`isArray`,`isObject`。
+- 类型判断：`isNull`,`isBool`,`isNumber`,`isString`,`isArray`,`isObject`。
 - Null类型操作：`setNull`，清空所有数据，类型转化为null。
-- 以下各类型专属操作使用前应该先确定类型，或者确定为null：
+- 以下各类型专属操作使用前应该先确定类型，或者确定为null时使用：
     - Boolean操作：`isTrue`,`isFalse`,`setBool`,`getBool`。
     - Number操作：`getNumber`,`setNumber`。
     - String操作：`getString`,`setString`。
@@ -101,6 +101,9 @@ writer.writeJson(value, json);
 - 支持解析与生成C/C++风格的注释。
 - Benchmark
 
+如果你发现了任何BUG或者想分享你的改进，欢迎[Pull Request][3]或者发起[Issue][4]。
 
 [1]: https://github.com/miloyip/json-tutorial
 [2]: https://github.com/open-source-parsers/jsoncpp
+[3]: https://github.com/aojueliuyun/JsonParserCpp/pulls
+[4]: 
