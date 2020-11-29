@@ -1,0 +1,8 @@
+**/.vs/**
+**/Debug/**
+**/Release/**
+**/X64/**
+**/Win32/**
+**/*.vcxproj.user
+
+
