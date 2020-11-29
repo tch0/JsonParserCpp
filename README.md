@@ -82,7 +82,7 @@ writer.writeJson(value, json);
     - Number操作：`getNumber`,`setNumber`。
     - String操作：`getString`,`setString`。
     - Array操作：`get`,`resize`,`append`,`insert`,`removeAt`,`operator[size_t]`。
-    - Obejct操作：`isObject`,`containsKey`,`getKeys`，`appendKey`,`removeKey`,`operator[std::string]`。
+    - Obejct操作：`containsKey`,`getKeys`，`appendKey`,`removeKey`,`operator[std::string]`。
     - Array&Object共用操作：`size`,`clear`,`empty`。
 - `operator==`,`operator!=`。
 - Null类型可转化为所有类型，可通过调用设置或者添加值的接口将其转化为其他类型。
