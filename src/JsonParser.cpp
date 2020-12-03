@@ -117,7 +117,6 @@ exp = ("e" / "E") ["-" / "+"] 1*digit
 整数部分正号不合法
 只有整数部分是必需的
 整数部分0开始的话，只能是单个0
-由1~9开始
 
 需要考虑如何存储解析后结果 ---------> 简单起见，采用double，需要更精确的话应该分整型和浮点来存储
 需要考虑分整型和浮点存储并且格式校验的话：number解析是整个parser中最难的部分。
@@ -165,7 +164,7 @@ int JsonParser::parseNumber(JsonValue& value)
 		for (p++; isdigit(*p); p++);
 	}
 
-	// strtod做转换，考虑溢出时也有正负号
+	// use strtod, overflow can be positive or negative 
 	errno = 0;
 	double ret = strtod(m_pJson, NULL);
 	if (errno == ERANGE && (ret == HUGE_VAL || ret == -HUGE_VAL))
@@ -562,6 +561,7 @@ int JsonParser::parseJson(JsonValue& value, const std::string& json, std::string
 		break;
 	}
 	
+	errInfo.clear();
 	if (ret != eOk)
 	{
 		m_curColumn = int(m_pJson - m_pCurLineHead + 1);
@@ -571,7 +571,6 @@ int JsonParser::parseJson(JsonValue& value, const std::string& json, std::string
 	}
 	else
 	{
-		errInfo.clear();
 		m_curLine = 0;
 		m_curColumn = 0;
 	}
@@ -592,7 +591,7 @@ int JsonParser::errorColumn()
 
 void JsonParser::setParseLFStyle(LFStyle style)
 {
-	m_CRLFStyle = (style < eCR && style > eCRLFAll) ? eCRLFAll : style;
+	m_CRLFStyle = (style < eCR || style > eCRLFAll) ? eCRLFAll : style;
 }
 
 }

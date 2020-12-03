@@ -76,9 +76,7 @@ void JsonWriter::writeJson(const JsonValue& value, std::string& json)
 	}
 	if (m_bAddUtf8Bom)
 	{
-		std::string utf8Bom;
-		JsonParser::encodeUtf8(0xFEFF, utf8Bom);
-		json += utf8Bom; // UTF-8 BOM, 0xEFBBBF
+		JsonParser::encodeUtf8(0xFEFF, json); // UTF-8 BOM, UniCode 0xFEFF, encode to utf-8 0xEFBBBF
 	}
 	writeJsonRaw(value, json);
 }
