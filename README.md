@@ -23,7 +23,12 @@
 ## 构建
 
 - 将`./include`与`./src`的文件添加到你的项目直接参与编译，或编译为静态链接库引用。
-- Windows下项目文件：`./Project`，环境：Visual Studio 2017。
+- Windows下项目文件：`./Project`，环境：Visual Studio 2022。
+- 使用GCC测试：
+```shell
+cd ./test
+make run
+```
 
 
 ## API
@@ -89,14 +94,13 @@ writer.writeJson(value, json);
 - 所有的获取接口都使用引用，如果需要拷贝一个value，通过获取后调用拷贝构造或者`operator=`完成。
 
 ## 存在问题
-- 在一个Value中存储了number/string/array/object所有类型的信息。构造时需要同时构造所有类型存储结构，时间和空间上都不够友好，但实现足够简单与直接。
+
 - 不能解析与生成注释。
 - 未区分整型和浮点。
 
 
 ## TODO or NOT TODO
 
-- 使用`union`存储不同类型的Value，优化时间和空间。
 - 支持整型解析与识别，区分整型和浮点。
 - 支持解析与生成C/C++风格的注释。
 - Benchmark
