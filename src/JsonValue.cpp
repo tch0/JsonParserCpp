@@ -8,43 +8,53 @@ const JsonValue JsonValue::sNullValue;
 
 JsonValue::JsonValue() :
 	m_valueType(eNull), 
-	m_val(0.0) {}
+	m_var() {}
 
 JsonValue::JsonValue(ValueType t) :
 	m_valueType(t),
-	m_val(0.0) {}
+	m_var()
+	{
+		switch (t)
+		{
+		case eString:
+			m_var = StringType();
+			break;
+		case eArray:
+			m_var = ArrayType();
+			break;
+		case eObject:
+			m_var = ObjectType();
+			break;
+		}
+	}
 
 JsonValue::JsonValue(bool b) :
 	m_valueType(b ? eTrue : eFalse),
-	m_val(0.0) {}
+	m_var() {}
 
 JsonValue::JsonValue(double val) : 
 	m_valueType(eNumber), 
-	m_val(val) {}
+	m_var(val) {}
 
 JsonValue::JsonValue(int val) :
 	m_valueType(eNumber),
-	m_val(val) {}
+	m_var(double(val)) {}
 
 JsonValue::JsonValue(const std::string& str) :
 	m_valueType(eString),
-	m_str(str), 
-	m_val(0.0) {}
+	m_var(str){}
 
 JsonValue::JsonValue(const char* str) :
 	m_valueType(eString), 
-	m_str(str), 
-	m_val(0.0) {}
+	m_var(str) {}
 
 JsonValue::JsonValue(const char* begin, const char* end) :
 	m_valueType(eString), 
-	m_str(begin, end), 
-	m_val(0.0) {}
+	m_var(StringType(begin, end)) {}
 
 JsonValue::JsonValue(const char* str, size_t len) :
 	m_valueType(eString),
-	m_str(str, str + len),
-	m_val(0.0) {}
+	m_var(StringType(str, str + len)) {}
 
 JsonValue::JsonValue(const JsonValue& value)
 {
@@ -80,17 +90,10 @@ bool JsonValue::operator==(const JsonValue& value) const
 		case eFalse:
 			return true;
 		case eNumber:
-			return m_val == value.m_val;
 		case eString:
-			return m_str == value.m_str;
 		case eArray:
-			{
-				return m_arr == value.m_arr;
-			}
 		case eObject:
-			{
-				return m_obj == value.m_obj;
-			}
+			return m_var == value.m_var;
 		}
 	}
 	return false;
@@ -105,34 +108,31 @@ void JsonValue::copyFrom(const JsonValue& value)
 {
 	setNull();
 	m_valueType = value.type();
-	if (value.isNumber())
-		m_val = value.m_val;
-	else if (value.isString())
-		m_str = value.m_str;
-	else if (value.isArray())
-		m_arr = value.m_arr;
-	else if (value.isObject())
-		m_obj = value.m_obj;
+	m_var = value.m_var;
 }
 
 void JsonValue::moveFrom(JsonValue& value)
 {
 	setNull();
 	m_valueType = value.type();
-	if (value.isNumber())
-		m_val = value.m_val;
-	else if (value.isString())
-		m_str = std::move(value.m_str);
-	else if (value.isArray())
-		m_arr = std::move(value.m_arr);
-	else if (value.isObject())
-		m_obj = std::move(value.m_obj);
+	m_var = std::move(value.m_var);
 }
 
 void JsonValue::setType(ValueType t) 
 {
 	m_valueType = t;
-
+	switch (t)
+	{
+	case eString:
+		m_var = StringType();
+		break;
+	case eArray:
+		m_var = ArrayType();
+		break;
+	case eObject:
+		m_var = ObjectType();
+		break;
+	}
 }
 ValueType JsonValue::type() const
 { 
@@ -147,10 +147,7 @@ bool JsonValue::isNull() const
 void JsonValue::setNull()
 {
 	m_valueType = eNull;
-	m_val = 0.0;
-	m_str.clear();
-	m_arr.clear();
-	m_obj.clear();
+	m_var = 0.0;
 }
 
 // boolean
@@ -172,7 +169,7 @@ bool JsonValue::isFalse() const
 void JsonValue::setBool(bool b)
 {
 	assert(m_valueType == eNull || m_valueType == eTrue || m_valueType == eFalse);
-	m_valueType = b ? eTrue : eFalse;
+	m_valueType = (b ? eTrue : eFalse);
 }
 
 bool JsonValue::getBool() const
@@ -190,14 +187,15 @@ bool JsonValue::isNumber() const
 double JsonValue::getNumber() const
 {
 	assert(m_valueType == eNumber);
-	return m_val;
+	assert(m_var.index() == 0);
+	return std::get<double>(m_var);
 }
 
 void JsonValue::setNumber(double val)
 {
 	assert(m_valueType == eNull || m_valueType == eNumber);
 	m_valueType = eNumber;
-	m_val = val;
+	m_var = val;
 }
 
 // string
@@ -209,7 +207,8 @@ bool JsonValue::isString() const
 const std::string& JsonValue::getString() const
 {
 	assert(m_valueType == eString);
-	return m_str;
+	assert(m_var.index() == 1);
+	return std::get<StringType>(m_var);
 }
 
 void JsonValue::setString(const char* str, size_t len) // str can include \0
@@ -221,14 +220,14 @@ void JsonValue::setString(const char* begin, const char* end)
 {
 	assert(m_valueType == eNull || m_valueType == eString);
 	m_valueType = eString;
-	m_str = std::string(begin, end);
+	m_var = std::string(begin, end);
 }
 
 void JsonValue::setString(const std::string& str)
 {
 	assert(m_valueType == eNull || m_valueType == eString);
 	m_valueType = eString;
-	m_str = str;
+	m_var = str;
 }
 
 // array
@@ -240,14 +239,16 @@ bool JsonValue::isArray() const
 const JsonValue& JsonValue::get(size_t index) const // get copy of array element
 {
 	assert(m_valueType == eArray);
-	assert(index >= 0 && index < m_arr.size());
-	return m_arr[index];
+	assert(m_var.index() == 2);
+	assert(index >= 0 && index < std::get<ArrayType>(m_var).size());
+	return std::get<ArrayType>(m_var)[index];
 }
 
 void JsonValue::resize(size_t newSize) // resize array
 {
 	assert(m_valueType == eArray && newSize >= 0);
-	m_arr.resize(newSize);
+	assert(m_var.index() == 2);
+	std::get<ArrayType>(m_var).resize(newSize);
 }
 
 void JsonValue::append(const JsonValue& value) // append a new value to array
@@ -258,8 +259,13 @@ void JsonValue::append(const JsonValue& value) // append a new value to array
 void JsonValue::append(JsonValue&& value) // append a rvalue
 {
 	assert(m_valueType == eNull || m_valueType == eArray);
+	if (m_valueType == eNull)
+	{
+		m_var = ArrayType{};
+	}
 	m_valueType = eArray;
-	m_arr.emplace_back(std::move(value));
+	assert(m_var.index() == 2);
+	std::get<ArrayType>(m_var).emplace_back(std::move(value));
 }
 
 bool JsonValue::insert(size_t index, const JsonValue& value) // insert a value to index
@@ -269,41 +275,46 @@ bool JsonValue::insert(size_t index, const JsonValue& value) // insert a value t
 
 bool JsonValue::insert(size_t index, JsonValue&& value) // insert a rvalue to index
 {
-	if (m_valueType != eArray || !(index >= 0 && index <= m_arr.size()))
+	assert(m_var.index() == 2);
+	if (m_valueType != eArray || !(index >= 0 && index <= std::get<ArrayType>(m_var).size()))
 		return false;
-	m_arr.emplace(m_arr.begin() + index, std::move(value));
+	std::get<ArrayType>(m_var).emplace(std::get<ArrayType>(m_var).begin() + index, std::move(value));
 	return true;
 }
 
 bool JsonValue::removeAt(size_t index, JsonValue& removed) // remove value of index, get removed value
 {
-	if (m_valueType != eArray || !(index >= 0 && index < m_arr.size()))
+	assert(m_var.index() == 2);
+	if (m_valueType != eArray || !(index >= 0 && index < std::get<ArrayType>(m_var).size()))
 		return false;
-	removed = std::move(m_arr[index]);
-	m_arr.erase(m_arr.begin() + index);
+	removed = std::move(std::get<ArrayType>(m_var)[index]);
+	std::get<ArrayType>(m_var).erase(std::get<ArrayType>(m_var).begin() + index);
 	return true;
 }
 
 bool JsonValue::removeAt(size_t index) // just remove value of index
 {
-	if (m_valueType != eArray || !(index >= 0 && index < m_arr.size()))
+	assert(m_var.index() == 2);
+	if (m_valueType != eArray || !(index >= 0 && index < std::get<ArrayType>(m_var).size()))
 		return false;
-	m_arr.erase(m_arr.begin() + index);
+	std::get<ArrayType>(m_var).erase(std::get<ArrayType>(m_var).begin() + index);
 	return true;
 }
 
 JsonValue& JsonValue::operator[](size_t index) // get reference of array element
 {
 	assert(m_valueType == eArray);
-	assert(index >= 0 && index < m_arr.size());
-	return m_arr[index];
+	assert(m_var.index() == 2);
+	assert(index >= 0 && index < std::get<ArrayType>(m_var).size());
+	return std::get<ArrayType>(m_var)[index];
 }
 
 const JsonValue& JsonValue::operator[](size_t index) const // get const reference of array element
 {
 	assert(m_valueType == eArray);
-	assert(index >= 0 && index < m_arr.size());
-	return m_arr[index];
+	assert(m_var.index() == 2);
+	assert(index >= 0 && index < std::get<ArrayType>(m_var).size());
+	return std::get<ArrayType>(m_var)[index];
 }
 
 // object
@@ -315,14 +326,16 @@ bool JsonValue::isObject() const
 bool JsonValue::containsKey(const std::string& key) const // if these is a key in object
 {
 	assert(m_valueType == eObject);
-	return m_obj.find(key) != m_obj.end();
+	assert(m_var.index() == 3);
+	return std::get<ObjectType>(m_var).find(key) != std::get<ObjectType>(m_var).end();
 }
 
 std::vector<std::string> JsonValue::getKeys() const // get all keys
 {
 	assert(m_valueType == eObject);
+	assert(m_var.index() == 3);
 	std::vector<std::string> keys;
-	for (auto iter = m_obj.begin(); iter != m_obj.end(); iter++)
+	for (auto iter = std::get<ObjectType>(m_var).begin(); iter != std::get<ObjectType>(m_var).end(); iter++)
 		keys.push_back(iter->first);
 	return std::move(keys);
 }
@@ -330,8 +343,9 @@ std::vector<std::string> JsonValue::getKeys() const // get all keys
 const JsonValue& JsonValue::get(const std::string& key) const // get const reference of value of key
 {
 	assert(m_valueType == eObject);
-	auto iter = m_obj.find(key);
-	if (iter == m_obj.end())
+	assert(m_var.index() == 3);
+	auto iter = std::get<ObjectType>(m_var).find(key);
+	if (iter == std::get<ObjectType>(m_var).end())
 		return sNullValue;
 	else
 		return iter->second;
@@ -340,32 +354,44 @@ const JsonValue& JsonValue::get(const std::string& key) const // get const refer
 void JsonValue::appendKey(const std::string& key, const JsonValue& value) // append a value to object for key
 {
 	assert(m_valueType == eObject || m_valueType == eNull);
+	if (m_valueType == eNull)
+	{
+		m_var = ObjectType();
+	}
 	m_valueType = eObject;
-	m_obj[key] = value;
+	assert(m_var.index() == 3);
+	std::get<ObjectType>(m_var)[key] = value;
 }
 
 bool JsonValue::removeKey(const std::string& key, JsonValue& removed) // erase value of key, get removed vlaue
 {
+	assert(m_var.index() == 3);
 	if (m_valueType != eObject || !containsKey(key))
 		return false;
-	removed = std::move(m_obj[key]);
-	m_obj.erase(key);
+	removed = std::move(std::get<ObjectType>(m_var)[key]);
+	std::get<ObjectType>(m_var).erase(key);
 	return true;
 }
 
 bool JsonValue::removeKey(const std::string& key) // just remove value of key
 {
+	assert(m_var.index() == 3);
 	if (m_valueType != eObject || !containsKey(key))
 		return false;
-	m_obj.erase(key);
+	std::get<ObjectType>(m_var).erase(key);
 	return true;
 }
 
 JsonValue& JsonValue::operator[](const std::string& key) // get reference of value of key
 {
 	assert(m_valueType == eObject || m_valueType == eNull);
+	if (m_valueType == eNull)
+	{
+		m_var = ObjectType();
+	}
 	m_valueType = eObject;
-	return m_obj[key];
+	assert(m_var.index() == 3);
+	return std::get<ObjectType>(m_var)[key];
 }
 
 // array & object in common
@@ -373,22 +399,44 @@ size_t JsonValue::size() const // object & array size
 {
 	assert(m_valueType == eArray || m_valueType == eObject);
 	if (m_valueType == eArray)
-		return m_arr.size();
+	{
+		assert(m_var.index() == 2);
+		return std::get<ArrayType>(m_var).size();
+	}
 	else
-		return m_obj.size();
+	{
+		assert(m_var.index() == 3);
+		return std::get<ObjectType>(m_var).size();
+	}
 }
 
 void JsonValue::clear() // clear all elements
 {
 	assert(m_valueType == eArray || m_valueType == eObject);
-	m_arr.clear();
-	m_obj.clear();
+	assert(m_var.index() == 2 || m_var.index() == 3);
+	if (m_var.index() == 2)
+	{
+		std::get<ArrayType>(m_var).clear();
+	}
+	else
+	{
+		std::get<ObjectType>(m_var).clear();
+	}
 }
 
 bool JsonValue::empty() const // is array or object empty
 {
 	assert(m_valueType == eArray || m_valueType == eObject);
-	return m_valueType == eArray ? m_arr.empty() : m_obj.empty();
+	if (m_valueType == eArray)
+	{
+		assert(m_var.index() == 2);
+		return std::get<ArrayType>(m_var).empty();
+	}
+	else
+	{
+		assert(m_var.index() == 3);
+		return std::get<ObjectType>(m_var).empty();
+	}
 }
 
 }

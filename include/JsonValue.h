@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <variant>
 
 namespace MyJson
 {
@@ -106,11 +107,11 @@ public:
 	bool empty() const;
 
 private:
+	using StringType = std::string;
+	using ArrayType = std::vector<JsonValue>;
+	using ObjectType = std::map<std::string, JsonValue>;
 	ValueType m_valueType;
-	double m_val;
-	std::string m_str;
-	std::vector<JsonValue> m_arr;
-	std::map<std::string, JsonValue> m_obj;
+	std::variant<double, std::string, std::vector<JsonValue>, std::map<std::string, JsonValue>> m_var;
 };
 
 }
